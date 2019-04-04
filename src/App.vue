@@ -233,7 +233,14 @@
       </div>
     </div>
     <!--// base layers -->
+      <!--logo-->
+    <div class="logo-org">
+      <a href="http://distillerie-vercors.com">
+        <img src="http://distillerie-vercors.com/wp-content/uploads/2018/05/Distillerie_logo_brun_corail-e1527681979704.png"></img>
+      </a>
+    </div>
   </div>
+
 </template>
 
 <script>
@@ -465,16 +472,6 @@
             visible: true,
           },
           {
-            name: 'sputnik',
-            title: 'Sputnik Maps',
-            visible: false,
-          },
-          // needs paid plan to get key
-          // {
-          //   name: 'mapbox',
-          //   title: 'Mapbox',
-          // },
-          {
             name: 'bingmaps',
             title: 'Bing Maps',
             apiKey: 'ArbsA9NX-AZmebC6VyXAnDqjXk6mo2wGCmeYM8EwyDaxKfQhUYyk0jtx6hX5fpMn',
@@ -502,98 +499,7 @@
                 factory: this.pacmanStyleFunc,
               },
             ],
-          },
-          // Circles
-          {
-            id: 'circles',
-            title: 'Circles',
-            cmp: 'vl-layer-vector',
-            visible: false,
-            source: {
-              cmp: 'vl-source-vector',
-              staticFeatures: range(0, 100).map(i => {
-                let coordinate = [
-                  random(-50, 50),
-                  random(-50, 50),
-                ]
-
-                return {
-                  type: 'Feature',
-                  id: 'random-cirlce-' + i,
-                  geometry: {
-                    type: 'Circle',
-                    coordinates: coordinate,
-                    radius: random(Math.pow(10, 5), Math.pow(10, 6)),
-                  },
-                }
-              }),
-            },
-          },
-          // Countries vector layer
-          // loads GeoJSON data from remote server
-          {
-            id: 'countries',
-            title: 'Countries',
-            cmp: 'vl-layer-vector',
-            visible: false,
-            source: {
-              cmp: 'vl-source-vector',
-              url: 'https://openlayers.org/en/latest/examples/data/geojson/countries.geojson',
-            },
-            style: [
-              {
-                cmp: 'vl-style-box',
-                styles: {
-                  'vl-style-fill': {
-                    color: [255, 255, 255, 0.5],
-                  },
-                  'vl-style-stroke': {
-                    color: '#219e46',
-                    width: 2,
-                  },
-                  'vl-style-text': {
-                    text: '\uf041',
-                    font: '24px FontAwesome',
-                    fill: {
-                      color: '#2355af',
-                    },
-                    stroke: {
-                      color: 'white',
-                    },
-                  },
-                },
-              },
-            ],
-          },
-          // Tile layer with WMS source
-          {
-            id: 'wms',
-            title: 'WMS',
-            cmp: 'vl-layer-tile',
-            visible: false,
-            source: {
-              cmp: 'vl-source-wms',
-              url: 'https://ahocevar.com/geoserver/wms',
-              layers: 'topp:states',
-              extParams: { TILED: true },
-              serverType: 'geoserver',
-            },
-          },
-          // Tile layer with WMTS source
-          {
-            id: 'wmts',
-            title: 'WMTS',
-            cmp: 'vl-layer-tile',
-            visible: false,
-            source: {
-              cmp: 'vl-source-wmts',
-              url: 'https://services.arcgisonline.com/arcgis/rest/services/Demographics/USA_Population_Density/MapServer/WMTS/',
-              layerName: '0',
-              matrixSet: 'EPSG:3857',
-              format: 'image/png',
-              styleName: 'default',
-            },
-          },
+          },        
           // Vector layer with clustering
           {
             id: 'cluster',
@@ -632,80 +538,7 @@
                 factory: this.clusterStyleFunc,
               },
             ],
-          },
-          {
-            id: 'wfs',
-            title: 'WFS (Canada water areas)',
-            cmp: 'vl-layer-vector',
-            visible: false,
-            renderMode: 'image',
-            source: {
-              cmp: 'vl-source-vector',
-              features: [],
-              url (extent, resolution, projection) {
-                return 'https://ahocevar.com/geoserver/wfs?service=WFS&' +
-                  'version=1.1.0&request=GetFeature&typename=osm:water_areas&' +
-                  'outputFormat=application/json&srsname=' + projection + '&' +
-                  'bbox=' + extent.join(',') + ',' + projection
-              },
-              strategyFactory () {
-                return loadingBBox
-              },
-            },
-          },
-          {
-            id: 'static-image',
-            title: 'Static Image with custom projection',
-            cmp: 'vl-layer-image',
-            visible: false,
-            source: {
-              cmp: 'vl-source-image-static',
-              projection: customProj.getCode(),
-              url: 'https://imgs.xkcd.com/comics/online_communities.png',
-              size: [1024, 968],
-              extent: imageExtent,
-            },
-          },
-          {
-            id: 'wms-image',
-            title: 'Image WMS',
-            cmp: 'vl-layer-image',
-            visible: false,
-            source: {
-              cmp: 'vl-source-image-wms',
-              url: 'https://ahocevar.com/geoserver/wms',
-              layers: 'topp:states',
-              serverType: 'geoserver',
-            },
-          },
-          {
-            id: 'vector-tiles',
-            title: 'Vector tiles',
-            cmp: 'vl-layer-vector-tile',
-            visible: false,
-            source: {
-              cmp: 'vl-source-vector-tile',
-              url: 'https://basemaps.arcgis.com/v1/arcgis/rest/services/World_Basemap/VectorTileServer/tile/{z}/{y}/{x}.pbf',
-            },
-            style: [
-              {
-                cmp: 'vl-style-box',
-                styles: {
-                  'vl-style-stroke': {
-                    width: 2,
-                    color: '#2979ff',
-                  },
-                  'vl-style-circle': {
-                    radius: 5,
-                    stroke: {
-                      width: 1.5,
-                      color: '#2979ff',
-                    },
-                  },
-                },
-              },
-            ],
-          },
+          }
         ],
       }
     },
@@ -790,4 +623,11 @@
 
       .content
         word-break: break-all
+    .logo-org
+      position: fixed
+      bottom: 3%
+      right: 10px      
+    .logo-org img
+      max-width: 80%
+      float:right
 </style>
