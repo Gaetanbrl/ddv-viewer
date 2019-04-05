@@ -160,18 +160,37 @@
         <div slot="trigger" class="panel-heading">
           <div class="columns">
             <div class="column is-11">
-              <strong>Map panel</strong>
+              <strong>Outils</strong>
             </div>
             <div class="column">
               <b-icon :icon="panelOpen ? 'chevron-up' : 'chevron-down'" size="is-small"></b-icon>
             </div>
           </div>
         </div>
-        <p class="panel-tabs">
-          <a @click="showMapPanelTab('state')" :class="mapPanelTabClasses('state')">State</a>
-          <a @click="showMapPanelTab('layers')" :class="mapPanelTabClasses('layers')">Layers</a>
-          <a @click="showMapPanelTab('draw')" :class="mapPanelTabClasses('draw')">Draw</a>
+        <!--Tools for drop downmap panel-->
+        <p class="panel-tabs">          
+          <a @click="showMapPanelTab('adresse')" :class="mapPanelTabClasses('adresse')">Adresse</a>          
+          <a @click="showMapPanelTab('layers')" :class="mapPanelTabClasses('layers')">Layers</a>                   
         </p>
+
+        <div class="panel-block" v-show="mapPanel.tab === 'adresse'">         
+            <section>
+            <p class="content"><b>Selected:</b> {{ selected }}</p>
+              <b-field label="Adresse :">
+                  <b-autocomplete
+                      :data="data"
+                      placeholder="Rue des Frères Tilly 22700"
+                      field="title"
+                      :loading="isFetching"
+                      @typing="getAsyncData"
+                      @select="option => selected = option.properties.label">
+                      <template slot-scope="props">                    
+                        <div>{{ props.option.properties.label }}</div>
+                      </template>
+                  </b-autocomplete>
+              </b-field>
+          </section>           
+        </div>
 
         <div class="panel-block" v-show="mapPanel.tab === 'state'">
           <table class="table is-fullwidth">
@@ -231,16 +250,14 @@
           {{ mapVisible ? 'Hide map' : 'Show map' }}
         </button>
       </div>
-    </div>
-    <!--// base layers -->
-      <!--logo-->
+    </div>    
+    <!--logo-->
     <div class="logo-org">
       <a href="http://distillerie-vercors.com">
         <img src="http://distillerie-vercors.com/wp-content/uploads/2018/05/Distillerie_logo_brun_corail-e1527681979704.png"></img>
       </a>
     </div>
   </div>
-
 </template>
 
 <script>
@@ -250,7 +267,8 @@
   import ScaleLine from 'ol/control/ScaleLine'
   import FullScreen from 'ol/control/FullScreen'
   import OverviewMap from 'ol/control/OverviewMap'
-  import ZoomSlider from 'ol/control/ZoomSlider'
+  import ZoomSlider from 'ol/control/ZoomSlider'   
+  import loadash from 'lodash';  
 
   // Custom projection for static Image layer
   let x = 1024 * 10000
@@ -265,9 +283,47 @@
   // after that it can be used by code
   addProj(customProj)
 
-  const easeInOut = t => 1 - Math.pow(1 - t, 3)
+  const easeInOut = t => 1 - Math.pow(1 - t, 3) 
+
+  /**
+   * Introduce by Gaetan - 05/04/2019
+   * Request to call API and dsisplay results as autocomplete elements
+   * @param array dataList : list object from virtual DOM
+   * @param string url : service URL
+   */
+  const createRequest = function(dataList, url){
+    const req = new XMLHttpRequest();
+    req.onreadystatechange = function(event) {        
+      // XMLHttpRequest.DONE === 4
+      if (this.readyState === XMLHttpRequest.DONE) {
+          if (this.status === 200) {                         
+            let results = JSON.parse(req.responseText).features;            
+            results.forEach((item) => dataList.push(item))
+            return 
+          } else {
+              return []
+          }
+      }
+    };
+    // open request
+    req.open('GET', url, true);
+    req.send(null);
+  };
 
   const methods = {
+    getAsyncData: loadash.debounce(function(name) {      
+      // control input
+      this.data = []
+      if (!name.length) {          
+          return
+      }            
+      // start loader
+      this.isFetching = true     
+      // call API to insert result to data directly
+      createRequest(this.data,`https://api-adresse.data.gouv.fr/search/?q=${name}`)           
+      // stop loader
+      this.isFetching = false
+    },500),  
     camelCase,
     pointOnSurface: findPointOnSurface,
     geometryTypeToCmpName (type) {
@@ -424,6 +480,12 @@
     methods,
     data () {
       return {
+        // -- specific
+        data: [],
+        name:'',
+        selected: null,
+        isFetching: false,
+        // -- origin
         center: [0, 0],
         zoom: 2,
         rotation: 0,
@@ -492,14 +554,14 @@
             source: {
               cmp: 'vl-source-vector',
               staticFeatures: pacmanFeaturesCollection.features,
-            },
+            }, 
             style: [
               {
                 cmp: 'vl-style-func',
                 factory: this.pacmanStyleFunc,
               },
             ],
-          },        
+          },         
           // Vector layer with clustering
           {
             id: 'cluster',
@@ -542,9 +604,18 @@
         ],
       }
     },
+    computed: {
+      filteredDataArray () {
+          return this.data.filter((option) => {
+              return option
+                  .toString()
+                  .toLowerCase()
+                  .indexOf(this.name.toLowerCase()) >= 0
+          })
+      }      
+    }
   }
 </script>
-
 <style lang="sass">
   @import ~bulma/sass/utilities/_all
 
@@ -629,5 +700,6 @@
       right: 10px      
     .logo-org img
       max-width: 80%
-      float:right
+      float: right
+      width: 50%
 </style>
