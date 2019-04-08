@@ -1,8 +1,8 @@
 {
-  "name": "vuelayers-demo",
+  "name": "ddv-mapviewer",
   "version": "1.0.0",
-  "description": "A Vue.js project",
-  "author": "ghettovoice <ghettovoice@gmail.com>",
+  "description": "A simple map viewer build with vuelayers",
+  "author": "pierre jego <pierre.jego@jdev.fr>",
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --mode development --progress --config build/webpack.dev.conf.js",

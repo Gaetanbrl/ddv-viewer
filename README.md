@@ -1,6 +1,7 @@
 # ddv-viewer
-Simple VueJs app build with npm.
+ddv viewer is a simple map viewer based an vuelayers framework.
 
+Install nodejs >8 version to build the app.
 
 
 ## Build Setup
