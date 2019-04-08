@@ -27,36 +27,6 @@
           </vl-style-box>
           <!--// select styles -->
 
-          <!-- selected feature popup -->
-          <vl-overlay class="feature-popup" v-for="feature in select.features" :key="feature.id" :id="feature.id"
-                      :position="pointOnSurface(feature.geometry)" :auto-pan="true" :auto-pan-animation="{ duration: 300 }">
-            <template slot-scope="popup">
-              <section class="card">
-                <header class="card-header">
-                  <p class="card-header-title">
-                    Feature ID {{ feature.id }}
-                  </p>
-                  <a class="card-header-icon" title="Close"
-                     @click="selectedFeatures = selectedFeatures.filter(f => f.id !== feature.id)">
-                    <b-icon icon="close"></b-icon>
-                  </a>
-                </header>
-                <div class="card-content">
-                  <div class="content">
-                    <p>
-                      Overlay popup content for Feature with ID <strong>{{ feature.id }}</strong>
-                    </p>
-                    <p>
-                      Popup: {{ JSON.stringify(popup) }}
-                    </p>
-                    <p>
-                      Feature: {{ JSON.stringify({ id: feature.id, properties: feature.properties }) }}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </template>
-          </vl-overlay>
           <!--// selected popup -->
         </template>
       </vl-interaction-select>
@@ -75,35 +45,30 @@
       </vl-geoloc>
       <!--// geolocation -->
 
-      <!-- overlay marker with animation -->
-      <vl-feature id="marker" ref="marker" :properties="{ start: Date.now(), duration: 2500 }">
-        <template slot-scope="feature">
-          <vl-geom-point :coordinates="[-10, -10]"></vl-geom-point>
-          <vl-style-box>
-            <vl-style-icon src="./assets/flag.png" :scale="0.5" :anchor="[0.1, 0.95]" :size="[128, 128]"></vl-style-icon>
-          </vl-style-box>
-          <!-- overlay binded to feature -->
-          <vl-overlay v-if="feature.geometry" :position="pointOnSurface(feature.geometry)" :offset="[10, 10]">
-            <p class="is-light box content">
-              Always opened overlay for Feature ID <strong>{{ feature.id }}</strong>
-            </p>
-          </vl-overlay>
-        </template>
-      </vl-feature>
-      <!--// overlay marker -->
-
-
-      <!-- circle geom -->
-      <vl-feature id="circle">
-        <vl-geom-circle :radius="1000000" :coordinates="[0, 30]"></vl-geom-circle>
-      </vl-feature>
-      <!--// circle geom -->
-
       <!-- base layers -->
       <vl-layer-tile v-for="layer in baseLayers" :key="layer.name" :id="layer.name" :visible="layer.visible">
         <component :is="'vl-source-' + layer.name" v-bind="layer"></component>
       </vl-layer-tile>
       <!--// base layers -->
+      
+      <!-- ban result feature-->
+      <!--vl-feature id="banMarker" ref="banMarker" >
+        <template slot-scope="feature">
+          <vl-geom-point :coordinates="banSelectedPosition"></vl-geom-point>
+          <vl-style-box>
+            <vl-style-icon src="./assets/place.png" :scale="0.5" :anchor="[0.1, 0.95]" ></vl-style-icon>
+          </vl-style-box>
+        </template>
+      </vl-feature-->
+      
+      <!-- interaction layer -->      
+      <vl-layer-vector id="featuresLayer">
+        <vl-source-vector ident="featuresSource" :features.sync="featuresBan"></vl-source-vector>        
+      </vl-layer-vector>
+
+      <vl-interaction-modify source="featuresSource"></vl-interaction-modify>
+      <!-- // interraction layer ->
+      <!-- // ban result feature-->
 
       <!-- other layers from config -->
       <component v-for="layer in layers" :is="layer.cmp" v-if="layer.visible" :key="layer.id" v-bind="layer">
@@ -130,6 +95,9 @@
 
         <!-- add style components if provided -->
         <!-- create vl-style-box or vl-style-func -->
+
+        <!-- COMPRENDRE CA POUR LES STYLES -->
+
         <component v-if="layer.style" v-for="(style, i) in layer.style" :key="i" :is="style.cmp" v-bind="style">
           <!-- create inner style components: vl-style-circle, vl-style-icon, vl-style-fill, vl-style-stroke & etc -->
           <component v-if="style.styles" v-for="(st, cmp) in style.styles" :key="cmp" :is="cmp" v-bind="st">
@@ -141,15 +109,6 @@
         <!--// style -->
       </component>
       <!--// other layers -->
-
-      <!-- draw components -->
-      <vl-layer-vector id="draw-pane" v-if="mapPanel.tab === 'draw'">
-        <vl-source-vector ident="draw-target" :features.sync="drawnFeatures"></vl-source-vector>
-      </vl-layer-vector>
-
-      <vl-interaction-draw v-if="mapPanel.tab === 'draw' && drawType" source="draw-target" :type="drawType"></vl-interaction-draw>
-      <vl-interaction-modify v-if="mapPanel.tab === 'draw'" source="draw-target"></vl-interaction-modify>
-      <vl-interaction-snap v-if="mapPanel.tab === 'draw'" source="draw-target" :priority="10"></vl-interaction-snap>
       <!--// draw components -->
     </vl-map>
     <!--// app map -->
@@ -174,47 +133,17 @@
         </p>
 
         <div class="panel-block" v-show="mapPanel.tab === 'adresse'">         
-            <section>
-            <p class="content"><b>Selected:</b> {{ selected }}</p>
-              <b-field label="Adresse :">
-                  <b-autocomplete
-                      :data="data"
-                      placeholder="Rue des Frères Tilly 22700"
-                      field="title"
-                      :loading="isFetching"
-                      @typing="getAsyncData"
-                      @select="option => selected = option.properties.label">
-                      <template slot-scope="props">                    
-                        <div>{{ props.option.properties.label }}</div>
-                      </template>
-                  </b-autocomplete>
-              </b-field>
-          </section>           
-        </div>
-
-        <div class="panel-block" v-show="mapPanel.tab === 'state'">
-          <table class="table is-fullwidth">
-            <tr>
-              <th>Map center</th>
-              <td>{{ center }}</td>
-            </tr>
-            <tr>
-              <th>Map zoom</th>
-              <td>{{ zoom }}</td>
-            </tr>
-            <tr>
-              <th>Map rotation</th>
-              <td>{{ rotation }}</td>
-            </tr>
-            <tr>
-              <th>Device coordinate</th>
-              <td>{{ deviceCoordinate }}</td>
-            </tr>
-            <tr>
-              <th>Selected features</th>
-              <td>{{ selectedFeatures.map(f => f.id) }}</td>
-            </tr>
-          </table>
+          <section class="sec-adresse">
+            <b-field label="Recherche d'adresse:">
+              <!--b-autocomplete v-model="name" :data="data" placeholder="15 Rue des Frères Tilly 22700" field="label" :loading="isFetching" @input="getAsyncData" @select="option => selected = option"-->
+              <b-autocomplete v-model="name" :data="data" placeholder="15 Rue des Frères Tilly 22700" field="label" :loading="isFetching" @input="getAsyncData" @select="updateCoordinates">
+                <template slot-scope="props">
+                  {{ props.option.properties.label }}
+                </template>
+              </b-autocomplete>
+            </b-field>
+            <a class="button is-danger" @click="removeFeature">Supprimer</a>
+          </section>       
         </div>
 
         <div class="panel-block" v-for="layer in layers" :key="layer.id" @click="showMapPanelLayer"
@@ -225,15 +154,6 @@
           </b-switch>
         </div>
 
-        <div class="panel-block draw-panel" v-show="mapPanel.tab === 'draw'">
-          <div class="buttons">
-            <button v-for="control in drawControls" :key="control.type || -1" @click="drawType = control.type"
-                    :class="drawType && drawType === control.type ? 'is-info' : ''" class="button" >
-              <b-icon :icon="control.icon"></b-icon>
-              <span>{{ control.label }}</span>
-            </button>
-          </div>
-        </div>
       </b-collapse>
     </div>
     <!--// map panel, controls -->
@@ -261,14 +181,18 @@
 </template>
 
 <script>
-  import { kebabCase, range, random, camelCase } from 'lodash'
-  import { createProj, addProj, findPointOnSurface, createStyle, createMultiPointGeom, loadingBBox } from 'vuelayers/lib/ol-ext'
+  import { kebabCase, range, random, camelCase, debounce } from 'lodash'
+  import { createProj, addProj, findPointOnSurface, createStyle, createMultiPointGeom } from 'vuelayers/lib/ol-ext'
   import pacmanFeaturesCollection from './assets/pacman.geojson'
   import ScaleLine from 'ol/control/ScaleLine'
   import FullScreen from 'ol/control/FullScreen'
   import OverviewMap from 'ol/control/OverviewMap'
-  import ZoomSlider from 'ol/control/ZoomSlider'   
-  import loadash from 'lodash';  
+  import ZoomSlider from 'ol/control/ZoomSlider'
+  // -- Add by Gaetan
+  import KML from 'ol/format/KML'
+  import axios from 'axios'
+  import clientsJson from './assets/clients_4326.geojson'
+  import faker from 'faker'
 
   // Custom projection for static Image layer
   let x = 1024 * 10000
@@ -283,51 +207,56 @@
   // after that it can be used by code
   addProj(customProj)
 
-  const easeInOut = t => 1 - Math.pow(1 - t, 3) 
-
-  /**
-   * Introduce by Gaetan - 05/04/2019
-   * Request to call API and dsisplay results as autocomplete elements
-   * @param array dataList : list object from virtual DOM
-   * @param string url : service URL
-   */
-  const createRequest = function(dataList, url){
-    const req = new XMLHttpRequest();
-    req.onreadystatechange = function(event) {        
-      // XMLHttpRequest.DONE === 4
-      if (this.readyState === XMLHttpRequest.DONE) {
-          if (this.status === 200) {                         
-            let results = JSON.parse(req.responseText).features;            
-            results.forEach((item) => dataList.push(item))
-            return 
-          } else {
-              return []
-          }
-      }
-    };
-    // open request
-    req.open('GET', url, true);
-    req.send(null);
-  };
-
   const methods = {
-    getAsyncData: loadash.debounce(function(name) {      
-      // control input
+    removeFeature: function () {
+      this.featuresBan = []
+    },
+    updateCoordinates: function (selected) {
+      if (selected.geometry) {
+        let geom = {
+          type: 'Point',
+          coordinates: selected.geometry.coordinates,
+        }
+        // create new feature if necessary
+        this.featuresBan = [{
+          id: faker.random.uuid(),
+          type: 'Feature',
+          geometry: geom,
+        }]
+      }
+    },
+    getAsyncData: debounce(function () {
       this.data = []
-      if (!name.length) {          
-          return
-      }            
-      // start loader
-      this.isFetching = true     
-      // call API to insert result to data directly
-      createRequest(this.data,`https://api-adresse.data.gouv.fr/search/?q=${name}`)           
-      // stop loader
-      this.isFetching = false
-    },500),  
+      this.isFetching = true
+      axios.get(`https://api-adresse.data.gouv.fr/search/?q=${this.name}`)
+        .then(({
+          data,
+        }) => {
+          data.features.forEach((item) => this.data.push(item))
+          this.isFetching = false
+        })
+        .catch((error) => {
+          this.isFetching = false
+          throw error
+        })
+    }, 500),
     camelCase,
     pointOnSurface: findPointOnSurface,
     geometryTypeToCmpName (type) {
       return 'vl-geom-' + kebabCase(type)
+    },
+    /**
+     * Clients layer Style function factory
+     * @return {ol.StyleFunction}
+     */
+    clientsStyleFunc () {
+      return function __clientsStyleFunc () {
+        return createStyle({
+          strokeColor: '#fff',
+          fillColor: '#3399cc',
+          textFillColor: '#fff',
+        })
+      }
     },
     /**
      * Packman layer Style function factory
@@ -404,34 +333,7 @@
       this.deviceCoordinate = coordinate
     },
     onMapPostCompose ({ vectorContext, frameState }) {
-      if (!this.$refs.marker || !this.$refs.marker.$feature) return
-
-      const feature = this.$refs.marker.$feature
-      if (!feature.getGeometry() || !feature.getStyle()) return
-
-      const flashGeom = feature.getGeometry().clone()
-      const duration = feature.get('duration')
-      const elapsed = frameState.time - feature.get('start')
-      const elapsedRatio = elapsed / duration
-      const radius = easeInOut(elapsedRatio) * 35 + 5
-      const opacity = easeInOut(1 - elapsedRatio)
-      const fillOpacity = easeInOut(0.5 - elapsedRatio)
-
-      vectorContext.setStyle(createStyle({
-        imageRadius: radius,
-        fillColor: [119, 170, 203, fillOpacity],
-        strokeColor: [119, 170, 203, opacity],
-        strokeWidth: 2 + opacity,
-      }))
-
-      vectorContext.drawGeometry(flashGeom)
-      vectorContext.setStyle(feature.getStyle()(feature)[0])
-      vectorContext.drawGeometry(feature.getGeometry())
-
-      if (elapsed > duration) {
-        feature.set('start', Date.now())
-      }
-
+      if (!this.$refs.banMarker || !this.$refs.banMarker.$feature) return
       this.$refs.map.render()
     },
     onMapMounted () {
@@ -481,8 +383,12 @@
     data () {
       return {
         // -- specific
+        latLong: [0, 0],
+        featuresBan: [],
+        banSelectedPosition: [0, 0],
         data: [],
-        name:'',
+        name: '',
+        coordinates: undefined,
         selected: null,
         isFetching: false,
         // -- origin
@@ -497,33 +403,6 @@
         },
         panelOpen: true,
         mapVisible: true,
-        drawControls: [
-          {
-            type: 'point',
-            label: 'Draw Point',
-            icon: 'map-marker',
-          },
-          {
-            type: 'line-string',
-            label: 'Draw LineString',
-            icon: 'minus',
-          },
-          {
-            type: 'polygon',
-            label: 'Draw Polygon',
-            icon: 'square-o',
-          },
-          {
-            type: 'circle',
-            label: 'Draw Circle',
-            icon: 'circle-thin',
-          },
-          {
-            type: undefined,
-            label: 'Stop drawing',
-            icon: 'times',
-          },
-        ],
         drawType: undefined,
         drawnFeatures: [],
         // base layers
@@ -543,8 +422,44 @@
         ],
         // layers config
         layers: [
-          // Packman vector layer with static vector features
-          // rendered through vl-feature component.
+          {
+            id: 'dataKml',
+            title: 'Layer KML',
+            cmp: 'vl-layer-vector',
+            visible: false,
+            renderMode: 'image',
+            source: {
+              cmp: 'vl-source-vector',
+              url: './src/assets/clients_4326.kml',
+              formatFactory: function () {
+                return new KML()
+              },
+            },
+          },
+          {
+            id: 'clientJson',
+            title: 'Client GeoJson',
+            cmp: 'vl-layer-vector',
+            visible: false,
+            source: {
+              cmp: 'vl-source-vector',
+              staticFeatures: clientsJson.features,
+            },
+            style: [
+              {
+                cmp: 'vl-style-box',
+                styles: {
+                  'vl-style-fill': {
+                    color: [255, 255, 255, 0.5],
+                  },
+                  'vl-style-stroke': {
+                    color: '#219e46',
+                    width: 2,
+                  },
+                },
+              },
+            ],
+          },
           {
             id: 'pacman',
             title: 'Pacman',
@@ -554,14 +469,14 @@
             source: {
               cmp: 'vl-source-vector',
               staticFeatures: pacmanFeaturesCollection.features,
-            }, 
+            },
             style: [
               {
                 cmp: 'vl-style-func',
                 factory: this.pacmanStyleFunc,
               },
             ],
-          },         
+          },
           // Vector layer with clustering
           {
             id: 'cluster',
@@ -600,20 +515,10 @@
                 factory: this.clusterStyleFunc,
               },
             ],
-          }
+          },
         ],
       }
     },
-    computed: {
-      filteredDataArray () {
-          return this.data.filter((option) => {
-              return option
-                  .toString()
-                  .toLowerCase()
-                  .indexOf(this.name.toLowerCase()) >= 0
-          })
-      }      
-    }
   }
 </script>
 <style lang="sass">
@@ -702,4 +607,6 @@
       max-width: 80%
       float: right
       width: 50%
+    .sec-adresse
+      width: 100%
 </style>
