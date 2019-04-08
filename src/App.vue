@@ -443,6 +443,34 @@
         // layers config
         layers: [
           {
+            id: 'regionsKml',
+            title: 'Régions',
+            cmp: 'vl-layer-vector',
+            visible: true,
+            renderMode: 'image',
+            source: {
+              cmp: 'vl-source-vector',
+              url: './src/assets/data/regions_4326.kml',
+              formatFactory: function () {
+                return new KML()
+              },
+            },
+          },
+          {
+            id: 'departementsKml',
+            title: 'Départemens',
+            cmp: 'vl-layer-vector',
+            visible: true,
+            renderMode: 'image',
+            source: {
+              cmp: 'vl-source-vector',
+              url: './src/assets/data/departements_4326.kml',
+              formatFactory: function () {
+                return new KML()
+              },
+            },
+          },
+          {
             id: 'dataKml',
             title: 'Layer KML',
             cmp: 'vl-layer-vector',
