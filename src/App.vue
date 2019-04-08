@@ -30,7 +30,7 @@
         <vl-source-vector ident="featuresSource" :features.sync="featuresBan">
         </vl-source-vector>                
         <vl-style-box>
-          <vl-style-icon src="./assets/geoPin.png" :scale="1" :anchor="[0.5, 1]"></vl-style-icon>
+          <vl-style-icon src="./assets/img/geoPin.png" :scale="1" :anchor="[0.5, 1]"></vl-style-icon>
         </vl-style-box>
       </vl-layer-vector>
 
