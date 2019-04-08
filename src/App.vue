@@ -5,30 +5,18 @@
             @click="clickCoordinate = $event.coordinate" @postcompose="onMapPostCompose"
             data-projection="EPSG:4326" @mounted="onMapMounted">
       <!-- map view aka ol.View -->
-      <vl-view ref="view" :center.sync="center" :zoom.sync="zoom" :rotation.sync="rotation"></vl-view>   
-      <!-- geolocation -->
-      <vl-geoloc @update:position="onUpdatePosition">
-        <template slot-scope="geoloc">
-          <vl-feature v-if="geoloc.position" id="position-feature">
-            <vl-geom-point :coordinates="geoloc.position"></vl-geom-point>
-            <vl-style-box>
-              <vl-style-icon src="./assets/marker.png" :scale="0.4" :anchor="[0.5, 1]"></vl-style-icon>
-            </vl-style-box>
-          </vl-feature>
-        </template>
-      </vl-geoloc>
-      <!--// geolocation -->
+      <vl-view ref="view" :center.sync="center" :zoom.sync="zoom" :rotation.sync="rotation"></vl-view>
 
       <!-- base layers -->
       <vl-layer-tile v-for="layer in baseLayers" :key="layer.name" :id="layer.name" :visible="layer.visible">
         <component :is="'vl-source-' + layer.name" v-bind="layer"></component>
       </vl-layer-tile>
       <!--// base layers -->
-      
+
       <!-- ban result feature-->
       <vl-layer-vector id="featuresLayer">
         <vl-source-vector ident="featuresSource" :features.sync="featuresBan">
-        </vl-source-vector>                
+        </vl-source-vector>
         <vl-style-box>
           <vl-style-icon src="./assets/img/geoPin.png" :scale="1" :anchor="[0.5, 1]"></vl-style-icon>
         </vl-style-box>
@@ -93,15 +81,15 @@
           </div>
         </div>
         <!--Tools for drop downmap panel-->
-        <p class="panel-tabs">          
-          <a @click="showMapPanelTab('adresse')" :class="mapPanelTabClasses('adresse')">Adresse</a>          
-          <a @click="showMapPanelTab('layers')" :class="mapPanelTabClasses('layers')">Layers</a>                   
+        <p class="panel-tabs">
+          <a @click="showMapPanelTab('adresse')" :class="mapPanelTabClasses('adresse')">Adresse</a>
+          <a @click="showMapPanelTab('layers')" :class="mapPanelTabClasses('layers')">Layers</a>
         </p>
 
         <!--Autocomplete panel-->
-        <div class="panel-block" v-show="mapPanel.tab === 'adresse'">         
+        <div class="panel-block" v-show="mapPanel.tab === 'adresse'">
           <section class="sec-adresse">
-            <b-field label="Recherche d'adresse:">              
+            <b-field label="Recherche d'adresse:">
               <b-autocomplete v-model="name" :data="data" :placeholder="banText" field="label" :loading="isFetching" @input="getAsyncData" @select="updateCoordinates">
                 <template slot-scope="props">
                   {{ props.option.properties.label }}
@@ -109,7 +97,7 @@
               </b-autocomplete>
             </b-field>
             <a class="button is-danger" @click="removeFeature">Supprimer</a>
-          </section>       
+          </section>
         </div>
         <!--// Autocomplete panel-->
 
@@ -138,7 +126,7 @@
           {{ mapVisible ? 'Hide map' : 'Show map' }}
         </button>
       </div>
-    </div>    
+    </div>
     <!--logo-->
     <div class="logo-org">
       <a href="http://distillerie-vercors.com">
@@ -346,8 +334,8 @@
         selected: null,
         isFetching: false,
         // original parameters
-        center: [0, 0],
-        zoom: 2,
+        center: [3.33357, 46.87760],
+        zoom: 6,
         rotation: 0,
         clickCoordinate: undefined,
         selectedFeatures: [],
@@ -394,7 +382,7 @@
             id: 'departementsKml',
             title: 'Départemens',
             cmp: 'vl-layer-vector',
-            visible: false,
+            visible: true,
             renderMode: 'image',
             source: {
               cmp: 'vl-source-vector',
@@ -408,7 +396,7 @@
             id: 'disitrbution',
             title: 'Points de distribution',
             cmp: 'vl-layer-vector',
-            visible: false,
+            visible: true,
             renderMode: 'image',
             source: {
               cmp: 'vl-source-vector',
@@ -424,7 +412,7 @@
             title: 'Clients',
             cmp: 'vl-layer-vector',
             renderMode: 'image',
-            visible: false,
+            visible: true,
             // Cluster source (vl-source-cluster) wraps vector source (vl-source-vector)
             source: {
               cmp: 'vl-source-cluster',
@@ -527,7 +515,7 @@
     .logo-org
       position: fixed
       bottom: 3%
-      right: 10px      
+      right: 10px
     .logo-org img
       max-width: 80%
       float: right
