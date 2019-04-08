@@ -483,48 +483,7 @@
                 return new KML()
               },
             },
-          },
-          {
-            id: 'clientJson',
-            title: 'Client GeoJson',
-            cmp: 'vl-layer-vector',
-            visible: false,
-            source: {
-              cmp: 'vl-source-vector',
-              staticFeatures: clientsJson.features,
-            },
-            style: [
-              {
-                cmp: 'vl-style-box',
-                styles: {
-                  'vl-style-fill': {
-                    color: [255, 255, 255, 0.5],
-                  },
-                  'vl-style-stroke': {
-                    color: '#219e46',
-                    width: 2,
-                  },
-                },
-              },
-            ],
-          },
-          {
-            id: 'pacman',
-            title: 'Pacman',
-            cmp: 'vl-layer-vector',
-            visible: false,
-            renderMode: 'image',
-            source: {
-              cmp: 'vl-source-vector',
-              staticFeatures: pacmanFeaturesCollection.features,
-            },
-            style: [
-              {
-                cmp: 'vl-style-func',
-                factory: this.pacmanStyleFunc,
-              },
-            ],
-          },
+          },          
           // Vector layer with clustering
           {
             id: 'cluster',
@@ -540,21 +499,7 @@
                 cmp: 'vl-source-vector',
                 // features defined as array of GeoJSON encoded Features
                 // to not overload Vue and DOM
-                features: range(0, 10000).map(i => {
-                  let coordinate = [
-                    random(-50, 50),
-                    random(-50, 50),
-                  ]
-
-                  return {
-                    type: 'Feature',
-                    id: 'random-' + i,
-                    geometry: {
-                      type: 'Point',
-                      coordinates: coordinate,
-                    },
-                  }
-                }),
+                staticFeatures: clientsJson.features,
               },
             },
             style: [
