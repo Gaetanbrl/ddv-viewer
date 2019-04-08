@@ -52,22 +52,16 @@
       <!--// base layers -->
       
       <!-- ban result feature-->
-      <!--vl-feature id="banMarker" ref="banMarker" >
-        <template slot-scope="feature">
-          <vl-geom-point :coordinates="banSelectedPosition"></vl-geom-point>
-          <vl-style-box>
-            <vl-style-icon src="./assets/place.png" :scale="0.5" :anchor="[0.1, 0.95]" ></vl-style-icon>
-          </vl-style-box>
-        </template>
-      </vl-feature-->
-      
-      <!-- interaction layer -->      
       <vl-layer-vector id="featuresLayer">
-        <vl-source-vector ident="featuresSource" :features.sync="featuresBan"></vl-source-vector>        
+        <vl-source-vector ident="featuresSource" :features.sync="featuresBan">
+        </vl-source-vector>                
+        <vl-style-box>
+          <vl-style-icon src="./assets/geoPin.png" :scale="1" :anchor="[0.5, 1]"></vl-style-icon>
+        </vl-style-box>
       </vl-layer-vector>
 
-      <vl-interaction-modify source="featuresSource"></vl-interaction-modify>
-      <!-- // interraction layer ->
+      <vl-interaction-modify source="featuresSource">
+      </vl-interaction-modify>
       <!-- // ban result feature-->
 
       <!-- other layers from config -->
@@ -96,7 +90,7 @@
         <!-- add style components if provided -->
         <!-- create vl-style-box or vl-style-func -->
 
-        <!-- COMPRENDRE CA POUR LES STYLES -->
+        <!-- A COMPRENDRE POUR LES STYLES -->
 
         <component v-if="layer.style" v-for="(style, i) in layer.style" :key="i" :is="style.cmp" v-bind="style">
           <!-- create inner style components: vl-style-circle, vl-style-icon, vl-style-fill, vl-style-stroke & etc -->
@@ -136,7 +130,7 @@
           <section class="sec-adresse">
             <b-field label="Recherche d'adresse:">
               <!--b-autocomplete v-model="name" :data="data" placeholder="15 Rue des Frères Tilly 22700" field="label" :loading="isFetching" @input="getAsyncData" @select="option => selected = option"-->
-              <b-autocomplete v-model="name" :data="data" placeholder="15 Rue des Frères Tilly 22700" field="label" :loading="isFetching" @input="getAsyncData" @select="updateCoordinates">
+              <b-autocomplete v-model="name" :data="data" :placeholder="banText" field="label" :loading="isFetching" @input="getAsyncData" @select="updateCoordinates">
                 <template slot-scope="props">
                   {{ props.option.properties.label }}
                 </template>
@@ -188,7 +182,6 @@
   import FullScreen from 'ol/control/FullScreen'
   import OverviewMap from 'ol/control/OverviewMap'
   import ZoomSlider from 'ol/control/ZoomSlider'
-  // -- Add by Gaetan
   import KML from 'ol/format/KML'
   import axios from 'axios'
   import clientsJson from './assets/clients_4326.geojson'
@@ -208,14 +201,23 @@
   addProj(customProj)
 
   const methods = {
+    /**
+     * Add by Gaetan 08-04-2019
+     * Remove autocomplete results features
+     */
     removeFeature: function () {
       this.featuresBan = []
     },
+    /**
+     * Modify by Gaetan 08-04-2019
+     * Display autocomplete feature result and update autocomplete field text
+     */
     updateCoordinates: function (selected) {
       if (selected.geometry) {
+        const xy = selected.geometry.coordinates
         let geom = {
           type: 'Point',
-          coordinates: selected.geometry.coordinates,
+          coordinates: xy,
         }
         // create new feature if necessary
         this.featuresBan = [{
@@ -223,19 +225,36 @@
           type: 'Feature',
           geometry: geom,
         }]
+        // set fieeld text
+        this.banText = selected.properties.label
+
+        // zoom to results
+        this.zoom = 15
+        this.center = xy
       }
     },
+    /**
+     * Add by Gaetan 04-04-2019
+     * Display autocomplete result from API service
+     */
     getAsyncData: debounce(function () {
+      // clear last results
       this.data = []
+      // start loader animation
       this.isFetching = true
       axios.get(`https://api-adresse.data.gouv.fr/search/?q=${this.name}`)
+        // promise
         .then(({
           data,
         }) => {
+          // load result to autocomplete form
           data.features.forEach((item) => this.data.push(item))
+          // stop loader animation
           this.isFetching = false
         })
+        // promise fail
         .catch((error) => {
+          // stop loader animation
           this.isFetching = false
           throw error
         })
@@ -383,6 +402,7 @@
     data () {
       return {
         // -- specific
+        banText: '15 Rue des Frères Tilly 22700',
         latLong: [0, 0],
         featuresBan: [],
         banSelectedPosition: [0, 0],
