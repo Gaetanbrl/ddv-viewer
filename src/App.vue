@@ -5,33 +5,7 @@
             @click="clickCoordinate = $event.coordinate" @postcompose="onMapPostCompose"
             data-projection="EPSG:4326" @mounted="onMapMounted">
       <!-- map view aka ol.View -->
-      <vl-view ref="view" :center.sync="center" :zoom.sync="zoom" :rotation.sync="rotation"></vl-view>
-
-      <!-- interactions -->
-      <vl-interaction-select :features.sync="selectedFeatures" v-if="drawType == null">
-        <template slot-scope="select">
-          <!-- select styles -->
-          <vl-style-box>
-            <vl-style-stroke color="#423e9e" :width="7"></vl-style-stroke>
-            <vl-style-fill :color="[254, 178, 76, 0.7]"></vl-style-fill>
-            <vl-style-circle :radius="5">
-              <vl-style-stroke color="#423e9e" :width="7"></vl-style-stroke>
-              <vl-style-fill :color="[254, 178, 76, 0.7]"></vl-style-fill>
-            </vl-style-circle>
-          </vl-style-box>
-          <vl-style-box :z-index="1">
-            <vl-style-stroke color="#d43f45" :width="2"></vl-style-stroke>
-            <vl-style-circle :radius="5">
-              <vl-style-stroke color="#d43f45" :width="2"></vl-style-stroke>
-            </vl-style-circle>
-          </vl-style-box>
-          <!--// select styles -->
-
-          <!--// selected popup -->
-        </template>
-      </vl-interaction-select>
-      <!--// interactions -->
-
+      <vl-view ref="view" :center.sync="center" :zoom.sync="zoom" :rotation.sync="rotation"></vl-view>   
       <!-- geolocation -->
       <vl-geoloc @update:position="onUpdatePosition">
         <template slot-scope="geoloc">
@@ -89,9 +63,7 @@
 
         <!-- add style components if provided -->
         <!-- create vl-style-box or vl-style-func -->
-
-        <!-- A COMPRENDRE POUR LES STYLES -->
-
+        <!-- TODO : What is this layer component ? -->
         <component v-if="layer.style" v-for="(style, i) in layer.style" :key="i" :is="style.cmp" v-bind="style">
           <!-- create inner style components: vl-style-circle, vl-style-icon, vl-style-fill, vl-style-stroke & etc -->
           <component v-if="style.styles" v-for="(st, cmp) in style.styles" :key="cmp" :is="cmp" v-bind="st">
@@ -126,10 +98,10 @@
           <a @click="showMapPanelTab('layers')" :class="mapPanelTabClasses('layers')">Layers</a>                   
         </p>
 
+        <!--Autocomplete panel-->
         <div class="panel-block" v-show="mapPanel.tab === 'adresse'">         
           <section class="sec-adresse">
-            <b-field label="Recherche d'adresse:">
-              <!--b-autocomplete v-model="name" :data="data" placeholder="15 Rue des Frères Tilly 22700" field="label" :loading="isFetching" @input="getAsyncData" @select="option => selected = option"-->
+            <b-field label="Recherche d'adresse:">              
               <b-autocomplete v-model="name" :data="data" :placeholder="banText" field="label" :loading="isFetching" @input="getAsyncData" @select="updateCoordinates">
                 <template slot-scope="props">
                   {{ props.option.properties.label }}
@@ -139,7 +111,9 @@
             <a class="button is-danger" @click="removeFeature">Supprimer</a>
           </section>       
         </div>
+        <!--// Autocomplete panel-->
 
+        <!--Layers panel-->
         <div class="panel-block" v-for="layer in layers" :key="layer.id" @click="showMapPanelLayer"
              :class="{ 'is-active': layer.visible }"
              v-show="mapPanel.tab === 'layers'">
@@ -147,7 +121,7 @@
             {{ layer.title }}
           </b-switch>
         </div>
-
+        <!--// Layers panel-->
       </b-collapse>
     </div>
     <!--// map panel, controls -->
@@ -168,23 +142,24 @@
     <!--logo-->
     <div class="logo-org">
       <a href="http://distillerie-vercors.com">
-        <img src="http://distillerie-vercors.com/wp-content/uploads/2018/05/Distillerie_logo_brun_corail-e1527681979704.png"></img>
+        <img src="http://distillerie-vercors.com/wp-content/uploads/2018/05/Distillerie_logo_brun_corail-e1527681979704.png"/></img>
       </a>
     </div>
   </div>
 </template>
 
 <script>
-  import { kebabCase, range, random, camelCase, debounce } from 'lodash'
-  import { createProj, addProj, findPointOnSurface, createStyle, createMultiPointGeom } from 'vuelayers/lib/ol-ext'
-  import pacmanFeaturesCollection from './assets/pacman.geojson'
+  import { kebabCase, camelCase, debounce } from 'lodash'
+  import { createProj, addProj, findPointOnSurface, createStyle } from 'vuelayers/lib/ol-ext'
   import ScaleLine from 'ol/control/ScaleLine'
   import FullScreen from 'ol/control/FullScreen'
   import OverviewMap from 'ol/control/OverviewMap'
   import ZoomSlider from 'ol/control/ZoomSlider'
+  /**
+   * Update by Gaëtan 08-04-2019
+   */
   import KML from 'ol/format/KML'
   import axios from 'axios'
-  import clientsJson from './assets/clients_4326.geojson'
   import faker from 'faker'
 
   // Custom projection for static Image layer
@@ -199,10 +174,10 @@
   // add to the list of known projections
   // after that it can be used by code
   addProj(customProj)
-
   const methods = {
     /**
      * Add by Gaetan 08-04-2019
+     * Button event
      * Remove autocomplete results features
      */
     removeFeature: function () {
@@ -229,7 +204,7 @@
         this.banText = selected.properties.label
 
         // zoom to results
-        this.zoom = 15
+        this.zoom = 11
         this.center = xy
       }
     },
@@ -268,57 +243,16 @@
      * Clients layer Style function factory
      * @return {ol.StyleFunction}
      */
-    clientsStyleFunc () {
-      return function __clientsStyleFunc () {
-        return createStyle({
-          strokeColor: '#fff',
-          fillColor: '#3399cc',
-          textFillColor: '#fff',
-        })
-      }
-    },
-    /**
-     * Packman layer Style function factory
-     * @return {ol.StyleFunction}
-     */
-    pacmanStyleFunc () {
-      const pacman = [
+    pointsStyleFunc () {
+      const pStyle = [
         createStyle({
           strokeColor: '#de9147',
           strokeWidth: 3,
           fillColor: [222, 189, 36, 0.8],
         }),
       ]
-      const path = [
-        createStyle({
-          strokeColor: 'blue',
-          strokeWidth: 1,
-        }),
-        createStyle({
-          imageRadius: 5,
-          imageFillColor: 'orange',
-          geom (feature) {
-            // geometry is an LineString, convert it to MultiPoint to style vertex
-            return createMultiPointGeom(feature.getGeometry().getCoordinates())
-          },
-        }),
-      ]
-      const eye = [
-        createStyle({
-          imageRadius: 6,
-          imageFillColor: '#444444',
-        }),
-      ]
-
-      return function __pacmanStyleFunc (feature) {
-        switch (feature.getId()) {
-          case 'pacman':
-            return pacman
-          case 'pacman-path':
-            return path
-          case 'pacman-eye':
-            return eye
-        }
+      return function __pointsStyleFunc (feature) {
+        return pStyle
       }
     },
     /**
@@ -336,7 +270,7 @@
           style = createStyle({
             imageRadius: 10,
             strokeColor: '#fff',
-            fillColor: '#3399cc',
+            fillColor: '#419e39',
             text: size.toString(),
             textFillColor: '#fff',
           })
@@ -401,7 +335,7 @@
     methods,
     data () {
       return {
-        // -- specific
+        // Add by Gaetan
         banText: '15 Rue des Frères Tilly 22700',
         latLong: [0, 0],
         featuresBan: [],
@@ -411,7 +345,7 @@
         coordinates: undefined,
         selected: null,
         isFetching: false,
-        // -- origin
+        // original parameters
         center: [0, 0],
         zoom: 2,
         rotation: 0,
@@ -425,7 +359,7 @@
         mapVisible: true,
         drawType: undefined,
         drawnFeatures: [],
-        // base layers
+        // base layers configuration
         baseLayers: [
           {
             name: 'osm',
@@ -440,7 +374,7 @@
             visible: false,
           },
         ],
-        // layers config
+        // layers configuration
         layers: [
           {
             id: 'regionsKml',
@@ -450,7 +384,7 @@
             renderMode: 'image',
             source: {
               cmp: 'vl-source-vector',
-              url: './src/assets/data/regions_4326.kml',
+              url: './src/assets/data/kml/regions_4326.kml',
               formatFactory: function () {
                 return new KML()
               },
@@ -460,34 +394,34 @@
             id: 'departementsKml',
             title: 'Départemens',
             cmp: 'vl-layer-vector',
-            visible: true,
+            visible: false,
             renderMode: 'image',
             source: {
               cmp: 'vl-source-vector',
-              url: './src/assets/data/departements_4326.kml',
+              url: './src/assets/data/kml/departements_4326.kml',
               formatFactory: function () {
                 return new KML()
               },
             },
           },
           {
-            id: 'dataKml',
-            title: 'Layer KML',
+            id: 'disitrbution',
+            title: 'Points de distribution',
             cmp: 'vl-layer-vector',
             visible: false,
             renderMode: 'image',
             source: {
               cmp: 'vl-source-vector',
-              url: './src/assets/clients_4326.kml',
+              url: './src/assets/data/kml/points_distribution.kml',
               formatFactory: function () {
                 return new KML()
               },
             },
-          },          
+          },
           // Vector layer with clustering
           {
             id: 'cluster',
-            title: 'Cluster',
+            title: 'Clients',
             cmp: 'vl-layer-vector',
             renderMode: 'image',
             visible: false,
@@ -497,9 +431,7 @@
               distance: 50,
               source: {
                 cmp: 'vl-source-vector',
-                // features defined as array of GeoJSON encoded Features
-                // to not overload Vue and DOM
-                staticFeatures: clientsJson.features,
+                url: './src/assets/data/geojson/clients_4326.geojson',
               },
             },
             style: [
